@@ -1,6 +1,6 @@
 def imageName = 'richinex/movies-marketplace'
 
-node {
+node('dind-agent') {
     stage('Checkout'){
         checkout scm
     }
@@ -22,7 +22,7 @@ node {
             reportName: "Coverage Report"
         ])
     }
-    
+
 
     stage('Static Code Analysis'){
         withSonarQubeEnv('sonarqube') {
