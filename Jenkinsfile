@@ -23,7 +23,6 @@ node {
         ])
     }
 
-
     stage('Static Code Analysis'){
         withSonarQubeEnv('sonarqube') {
             // Get the path to the configured SonarQube Scanner
