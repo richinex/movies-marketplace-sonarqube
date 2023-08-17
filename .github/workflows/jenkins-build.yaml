@@ -1,0 +1,26 @@
+name: Trigger Jenkins Build
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  trigger:
+    runs-on: ubuntu-latest
+    env:
+      NGROK_URL: ${{ secrets.NGROK_URL }}
+      JENKINS_USERNAME: ${{ secrets.JENKINS_USERNAME }}
+      JENKINS_API_TOKEN: ${{ secrets.JENKINS_API_TOKEN }}
+
+    steps:
+      - name: Echo NGROK_URL and Username
+        run: |
+          echo "NGROK URL: ${{ secrets.NGROK_URL }}"
+          echo "Jenkins Username: ${{ secrets.JENKINS_USERNAME }}"
+          echo "Jenkins Token: ${{ secrets.JENKINS_API_TOKEN }}"
+
+      - name: Trigger Jenkins
+        run: |
+          curl -X POST "${NGROK_URL}/job/movies-marketplace-sonarqube/build" \
+               --user "${JENKINS_USERNAME}:${JENKINS_API_TOKEN}"
