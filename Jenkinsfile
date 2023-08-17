@@ -22,6 +22,7 @@ node {
             reportName: "Coverage Report"
         ])
     }
+    
 
     stage('Static Code Analysis'){
         withSonarQubeEnv('sonarqube') {
