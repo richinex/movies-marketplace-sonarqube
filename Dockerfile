@@ -1,6 +1,6 @@
 # Use the official Node.js 14.20.0 image from the Docker Hub as the base image.
 # This image includes Node.js and npm, which are needed to build the application.
-FROM node:14.0.0 as builder
+FROM node:14.17.0 as builder
 
 # The ARG instruction defines a variable that users can pass at build-time to the builder with the docker build command.
 # Here ENVIRONMENT is a variable that will be used later in the ng build command.
