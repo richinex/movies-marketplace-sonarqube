@@ -1,6 +1,6 @@
 def imageName = 'richinex/movies-marketplace'
 
-node {
+node('dind-agent') {
     stage('Checkout'){
         checkout scm
     }
@@ -23,7 +23,6 @@ node {
         ])
     }
 
-
     stage('Static Code Analysis'){
         withSonarQubeEnv('sonarqube') {
             // Get the path to the configured SonarQube Scanner
@@ -34,18 +33,18 @@ node {
         }
     }
 
+    // move Quality Gate outside of the node block
+    stage("Quality Gate") {
+        timeout(time: 5, unit: 'MINUTES') {
+            def qg = waitForQualityGate()
+            if (qg.status != 'OK') {
+                error "Pipeline aborted due to quality gate failure: ${qg.status}"
+            }
+        }
+    }
+
     stage('Build'){
         docker.build(imageName, '--build-arg ENVIRONMENT=sandbox .')
-    }
-}
-
-// move Quality Gate outside of the node block
-stage("Quality Gate") {
-    timeout(time: 5, unit: 'MINUTES') {
-        def qg = waitForQualityGate()
-        if (qg.status != 'OK') {
-            error "Pipeline aborted due to quality gate failure: ${qg.status}"
-        }
     }
 }
 
