@@ -1,6 +1,5 @@
 def imageName = 'richinex/movies-marketplace'
 
-
 node('dind-agent') {
     stage('Checkout'){
         checkout scm
