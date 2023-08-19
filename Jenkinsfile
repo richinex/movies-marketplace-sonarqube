@@ -1,18 +1,24 @@
-def imageName = 'richinex/movies-marketplace'
+def imageName = 'movies-marketplace' // removed username
+def dockerHubUsername = env.DOCKERHUB_USERNAME
+def emailAddress = env.EMAIL_ADDRESS
 
 node('dind-agent') {
     stage('Checkout'){
         checkout scm
     }
 
-    def imageTest = docker.build("${imageName}-test", "-f Dockerfile.test .")
+    def imageTest = docker.build("${dockerHubUsername}/${imageName}-test", "-f Dockerfile.test .")
 
-    stage('Quality Tests'){
-        sh "docker run --rm ${imageName}-test npm run lint"
+    stage('Quality Tests') {
+        imageTest.inside("--rm") {
+        sh "npm run lint"
+        }
     }
 
-    stage('Unit Tests'){
-        sh "docker run --rm -v $PWD/coverage:/app/coverage ${imageName}-test npm run test"
+    stage('Unit Tests') {
+        imageTest.inside("--rm -v $PWD/coverage:/app/coverage") {
+            sh "npm run test"
+        }
         publishHTML(target: [
             allowMissing: false,
             alwaysLinkToLastBuild: false,
@@ -36,6 +42,14 @@ node('dind-agent') {
     stage('Build'){
         docker.build(imageName, '--build-arg ENVIRONMENT=sandbox .')
     }
+
+    post {
+        always {
+            mail to: emailAddress,
+            subject: "Status of pipeline: ${currentBuild.fullDisplayName}",
+            body: "${env.BUILD_URL} has result ${currentBuild.result}"
+        }
+    }
 }
 
 // move Quality Gate outside of the node block
@@ -47,7 +61,6 @@ stage("Quality Gate") {
         }
     }
 }
-
 
 def commitID() {
     sh 'git rev-parse HEAD > .git/commitID'
