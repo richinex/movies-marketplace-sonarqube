@@ -45,10 +45,12 @@ node('dind-agent') {
         stage('Build') {
             docker.build(imageName, '--build-arg ENVIRONMENT=sandbox .')
         }
+        currentBuild.result = 'SUCCESS'
     } catch (Exception e) {
         mail to: emailAddress,
              subject: "Failure in pipeline: ${currentBuild.fullDisplayName}",
              body: "The build has failed. Check the details at ${env.BUILD_URL}. Error: ${e}"
+             currentBuild.result = 'FAILURE'
         throw e
     } finally {
         mail to: emailAddress,
