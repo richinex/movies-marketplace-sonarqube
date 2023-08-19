@@ -15,7 +15,7 @@ node('dind-agent') {
         }
 
         stage('Unit Tests') {
-            sh "docker run --rm -v $PWD/coverage:/app/coverage ${dockerHubUsername}/${imageName}-test npm run test"
+            sh "docker run --rmm -v $PWD/coverage:/app/coverage ${dockerHubUsername}/${imageName}-test npm run test"
             publishHTML(target: [
                 allowMissing: false,
                 alwaysLinkToLastBuild: false,
