@@ -1,63 +1,62 @@
-def imageName = 'movies-marketplace' // removed username
+def imageName = 'movies-marketplace'
 def dockerHubUsername = env.DOCKERHUB_USERNAME
 def emailAddress = env.EMAIL_ADDRESS
 
 node('dind-agent') {
-    stage('Checkout'){
-        checkout scm
-    }
-
-    def imageTest = docker.build("${dockerHubUsername}/${imageName}-test", "-f Dockerfile.test .")
-
-    stage('Quality Tests') {
-        imageTest.inside("--rm") {
-        sh "npm run lint"
+    try {
+        stage('Checkout') {
+            checkout scm
         }
-    }
 
-    stage('Unit Tests') {
-        imageTest.inside("--rm -v $PWD/coverage:/app/coverage") {
-            sh "npm run test"
+        def imageTest = docker.build("${dockerHubUsername}/${imageName}-test", "-f Dockerfile.test .")
+
+        stage('Quality Tests') {
+            sh "docker run --rm ${dockerHubUsername}/${imageName}-test npm run lint"
         }
-        publishHTML(target: [
-            allowMissing: false,
-            alwaysLinkToLastBuild: false,
-            keepAll: true,
-            reportDir: "$PWD/coverage/marketplace",
-            reportFiles: "index.html",
-            reportName: "Coverage Report"
-        ])
-    }
 
-    stage('Static Code Analysis'){
-        withSonarQubeEnv('sonarqube') {
-            // Get the path to the configured SonarQube Scanner
-            def scannerHome = tool 'sonarqube'
-
-            // Run the SonarQube scanner with project version set to Jenkins build number
-            sh "${scannerHome}/bin/sonar-scanner -Dsonar.projectVersion=${env.BUILD_NUMBER}"
+        stage('Unit Tests') {
+            sh "docker run --rm -v $PWD/coverage:/app/coverage ${dockerHubUsername}/${imageName}-test npm run test"
+            publishHTML(target: [
+                allowMissing: false,
+                alwaysLinkToLastBuild: false,
+                keepAll: true,
+                reportDir: "$PWD/coverage/marketplace",
+                reportFiles: "index.html",
+                reportName: "Coverage Report"
+            ])
         }
-    }
 
-    stage('Build'){
-        docker.build(imageName, '--build-arg ENVIRONMENT=sandbox .')
+        stage('Static Code Analysis') {
+            withSonarQubeEnv('sonarqube') {
+                def scannerHome = tool 'sonarqube'
+                sh "${scannerHome}/bin/sonar-scanner -Dsonar.projectVersion=${env.BUILD_NUMBER}"
+            }
+        }
+
+        stage("Quality Gate") {
+            timeout(time: 5, unit: 'MINUTES') {
+            def qg = waitForQualityGate()
+            if (qg.status != 'OK') {
+                error "Pipeline aborted due to quality gate failure: ${qg.status}"
+                }
+            }
+        }
+
+        stage('Build') {
+            docker.build(imageName, '--build-arg ENVIRONMENT=sandbox .')
+        }
+    } catch (Exception e) {
+        mail to: email,
+             subject: "Failure in pipeline: ${currentBuild.fullDisplayName}",
+             body: "The build has failed. Check the details at ${env.BUILD_URL}. Error: ${e}"
+        throw e
     }
 
     post {
         always {
             mail to: emailAddress,
-            subject: "Status of pipeline: ${currentBuild.fullDisplayName}",
-            body: "${env.BUILD_URL} has result ${currentBuild.result}"
-        }
-    }
-}
-
-// move Quality Gate outside of the node block
-stage("Quality Gate") {
-    timeout(time: 5, unit: 'MINUTES') {
-        def qg = waitForQualityGate()
-        if (qg.status != 'OK') {
-            error "Pipeline aborted due to quality gate failure: ${qg.status}"
+                 subject: "Status of pipeline: ${currentBuild.fullDisplayName}",
+                 body: "${env.BUILD_URL} has result ${currentBuild.result}"
         }
     }
 }
