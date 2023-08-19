@@ -35,9 +35,9 @@ node('dind-agent') {
 
         stage("Quality Gate") {
             timeout(time: 5, unit: 'MINUTES') {
-            def qg = waitForQualityGate()
-            if (qg.status != 'OK') {
-                error "Pipeline aborted due to quality gate failure: ${qg.status}"
+                def qg = waitForQualityGate()
+                if (qg.status != 'OK') {
+                    error "Pipeline aborted due to quality gate failure: ${qg.status}"
                 }
             }
         }
@@ -46,18 +46,14 @@ node('dind-agent') {
             docker.build(imageName, '--build-arg ENVIRONMENT=sandbox .')
         }
     } catch (Exception e) {
-        mail to: email,
+        mail to: emailAddress,
              subject: "Failure in pipeline: ${currentBuild.fullDisplayName}",
              body: "The build has failed. Check the details at ${env.BUILD_URL}. Error: ${e}"
         throw e
-    }
-
-    post {
-        always {
-            mail to: emailAddress,
-                 subject: "Status of pipeline: ${currentBuild.fullDisplayName}",
-                 body: "${env.BUILD_URL} has result ${currentBuild.result}"
-        }
+    } finally {
+        mail to: emailAddress,
+             subject: "Status of pipeline: ${currentBuild.fullDisplayName}",
+             body: "${env.BUILD_URL} has result ${currentBuild.result}"
     }
 }
 
