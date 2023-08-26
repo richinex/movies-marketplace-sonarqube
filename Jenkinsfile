@@ -33,6 +33,15 @@ node('dind-agent') {
             }
         }
 
+        stage("Quality Gate") {
+            timeout(time: 5, unit: 'MINUTES') {
+                def qg = waitForQualityGate()
+                if (qg.status != 'OK') {
+                    error "Pipeline aborted due to quality gate failure: ${qg.status}"
+                }
+            }
+        }
+
         stage('Build') {
             docker.build(imageName, '--build-arg ENVIRONMENT=sandbox .')
         }
@@ -49,16 +58,6 @@ node('dind-agent') {
              body: "${env.BUILD_URL} has result ${currentBuild.result}"
     }
 }
-
-stage("Quality Gate") {
-            timeout(time: 5, unit: 'MINUTES') {
-                def qg = waitForQualityGate()
-                if (qg.status != 'OK') {
-                    error "Pipeline aborted due to quality gate failure: ${qg.status}"
-                }
-            }
-        }
-
 
 
 def commitID() {

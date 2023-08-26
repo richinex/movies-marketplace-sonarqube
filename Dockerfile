@@ -29,6 +29,7 @@ RUN npm i && npm i -g @angular/cli
 # Copy the rest of your app's source code from your host to your image filesystem.
 COPY . .
 
+
 # Build the application using the Angular CLI (ng) build command.
 # The configuration used (dev, prod) will be the one passed as ENVIRONMENT when building the Docker image.
 RUN ng build -c $ENVIRONMENT
