@@ -1,5 +1,4 @@
 name: Trigger Jenkins Build
-
 on:
   push:
     branches:
