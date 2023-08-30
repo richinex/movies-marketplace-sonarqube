@@ -10,7 +10,7 @@ RUN echo "deb http://archive.debian.org/debian/ stretch main" > /etc/apt/sources
 
 
 COPY package-lock.json .
-# COPY package.json .
+COPY package.json .
 
 RUN npm i && npm i -g @angular/cli
 
